@@ -12,7 +12,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Constants for session keys and database connection details
 const (
 	sessionName = "session"
 	sessionKey  = "secret-key"
@@ -24,14 +23,12 @@ const (
 	driverName  = "mysql"
 )
 
-// User represents a user in the system
 type User struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
 	Password string `json:"-"`
 }
 
-// Password represents a stored password
 type Password struct {
 	ID       int    `json:"id"`
 	UserID   int    `json:"-"`
@@ -39,8 +36,6 @@ type Password struct {
 	Username string `json:"username"`
 	Password string `json:"-"`
 }
-
-// DB wraps sql.DB to provide additional functionality if needed
 type DB struct {
 	*sql.DB
 }
@@ -51,14 +46,10 @@ var (
 )
 
 func init() {
-	// Initialize session store
 	store = sessions.NewCookieStore([]byte(sessionKey))
-
-	// Initialize database connection
 	db = initDB()
 }
 
-// initDB initializes the database connection
 func initDB() *DB {
 	db, err := sql.Open("mysql", "joshua468"+":"+"Temitope2080"+"@tcp("+"localhost"+":"+"3306"+")/"+"mydb")
 	if err != nil {
@@ -81,8 +72,6 @@ func main() {
 	http.Handle("/", r)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
-
-// signupHandler handles user signup
 func signupHandler(w http.ResponseWriter, r *http.Request) {
 	var user User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -103,8 +92,6 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 }
-
-// loginHandler handles user login
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	var user User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -127,14 +114,12 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// logoutHandler handles user logout
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	session, _ := store.Get(r, sessionName)
 	delete(session.Values, "user")
 	session.Save(r, w)
 }
 
-// requireLogin is a middleware to check if the user is authenticated
 func requireLogin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, _ := store.Get(r, sessionName)
@@ -146,7 +131,6 @@ func requireLogin(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// getPasswordHandler retrieves passwords for the authenticated user
 func getPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	user := getCurrentUser(r)
 	rows, err := db.Query("SELECT * FROM passwords WHERE user_id =?", user.ID)
@@ -168,7 +152,6 @@ func getPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(passwords)
 }
 
-// addPasswordHandler adds a new password for the authenticated user
 func addPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	var password Password
 	if err := json.NewDecoder(r.Body).Decode(&password); err != nil {
@@ -184,7 +167,6 @@ func addPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-// getCurrentUser retrieves the current user from the session
 func getCurrentUser(r *http.Request) User {
 	session, _ := store.Get(r, sessionName)
 	username := session.Values["user"].(string)
